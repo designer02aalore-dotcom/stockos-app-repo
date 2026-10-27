@@ -45,10 +45,7 @@ export default defineConfig({
   plugins: [
     tsconfigPaths(),
     tanstackStart(),
-    // 👇 Nitro प्लगइन योग्य फॉरमॅटमध्ये
-    nitro({
-      preset: "vercel",
-    }),
+    nitro(), // 👈 फक्त हे ठेवा, preset काढून टाका
     rolldownCompatPlugin(),
     react(),
     tailwindcss(),
