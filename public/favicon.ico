@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="stockosGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="60%" stop-color="#1D4ED8" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#818CF8" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#1D4ED8" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle with subtle border -->
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#stockosGrad)" filter="url(#glow)" />
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="none" stroke="#60A5FA" stroke-width="2" stroke-opacity="0.4" />
+
+  <!-- Subtle order layer grid -->
+  <path d="M 40 44 L 64 32 L 88 44 L 64 56 Z" fill="#93C5FD" fill-opacity="0.22" />
+
+  <!-- Bold Modern 'S' for StockOS -->
+  <path d="M 78 48 C 76 43 71 40 63 40 C 51 40 44 46 44 54 C 44 63 52 66 61 68 C 73 71 83 75 83 85 C 83 96 73 103 61 103 C 50 103 42 98 39 90" 
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="12" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- AI Sparkle in top right -->
+  <path d="M 94 22 L 96 30 L 104 32 L 96 34 L 94 42 L 92 34 L 84 32 L 92 30 Z" fill="url(#accentGrad)" />
+</svg>

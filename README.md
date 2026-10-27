@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StockOS Sales Order AI (TanStack Start)
+
+A full-stack application built with **TanStack Start** (`@tanstack/react-start`), **TanStack Router**, Vite, Tailwind CSS v4, and Supabase. It automatically converts purchase orders from scanned documents, invoice images, and incoming emails into validated sales orders with AI OCR extraction, catalog item matching, and a confirm-before-save workflow.
+
+## Framework Architecture
+
+- **Framework**: [TanStack Start](https://tanstack.com/start) (`@tanstack/react-start`)
+- **Routing**: [TanStack Router](https://tanstack.com/router) (`@tanstack/react-router`) with type-safe file routes in `src/routes/`
+- **Build Tool**: Vite 6 with `@tanstack/react-start/plugin/vite` and `@tailwindcss/vite`
+- **Backend / Database**: Supabase (`stockos_sales_orders_db`)
+- **AI Extraction**: Multi-model vision pipeline (Groq llama-3.3-70b / gpt-oss-120b + Google Gemini Flash + Tesseract OCR)
+- **Email Sync**: Google Gmail API OAuth integration with automated duplicate order prevention
 
 ## Getting Started
 
-First, run the development server:
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **AI Vision Extraction**: Upload invoice images or handwritten purchase orders to automatically extract vendor, customer, line items, and quantities.
+2. **Email Order Scanner**: Connect your Gmail inbox to automatically detect purchase orders, deduplicate existing message IDs, and convert them to draft sales orders.
+3. **Smart Catalog Matching**: Match raw extracted line items to catalog inventory codes with automated fuzzy matching and manual item creation modals.
+4. **Confirm Before Saving**: Comprehensive verification modal before writing confirmed orders to the Supabase database.
+5. **Atomic Database Transactions**: Saves order headers and line items together inside a single database transaction (`supabase/migrations/save_sales_order_transaction.sql`) with automated rollback compensation, preventing orphaned records or partial writes.
