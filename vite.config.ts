@@ -5,6 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { nitro } from "nitro/vite"; // 👈 नवीन इम्पोर्ट
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -44,6 +45,7 @@ export default defineConfig({
   plugins: [
     tsconfigPaths(),
     tanstackStart(),
+    nitro(), // 👈 नवीन प्लगइन ॲड केले
     rolldownCompatPlugin(),
     react(),
     tailwindcss(),
