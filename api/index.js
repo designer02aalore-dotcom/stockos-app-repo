@@ -2,6 +2,10 @@ import server from "../dist/server/server.js";
 
 export const config = {
   runtime: "nodejs",
+  api: {
+    bodyParser: false,
+  },
+  maxDuration: 60,
 };
 
 export default async function handler(req, res) {
@@ -27,11 +31,23 @@ export default async function handler(req, res) {
     };
 
     if (req.method !== "GET" && req.method !== "HEAD") {
-      const chunks = [];
-      for await (const chunk of req) {
-        chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+      if (req.body) {
+        if (Buffer.isBuffer(req.body)) {
+          init.body = req.body;
+        } else if (typeof req.body === "string") {
+          init.body = Buffer.from(req.body);
+        } else {
+          init.body = Buffer.from(JSON.stringify(req.body));
+        }
+      } else {
+        const chunks = [];
+        for await (const chunk of req) {
+          chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+        }
+        if (chunks.length > 0) {
+          init.body = Buffer.concat(chunks);
+        }
       }
-      init.body = Buffer.concat(chunks);
     }
 
     const webRequest = new Request(fullUrl, init);
