@@ -10,8 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as ItemsRouteImport } from './routes/items'
+import { Route as OrderRouteImport } from './routes/order'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ApiAdditionalOptionsRouteImport } from './routes/api/additional-options'
 import { Route as ApiCatalogRouteImport } from './routes/api/catalog'
@@ -50,6 +52,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
@@ -58,6 +65,11 @@ const InboxRoute = InboxRouteImport.update({
 const ItemsRoute = ItemsRouteImport.update({
   id: '/items',
   path: '/items',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderRoute = OrderRouteImport.update({
+  id: '/order',
+  path: '/order',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UploadRoute = UploadRouteImport.update({
@@ -225,8 +237,10 @@ const ApiExtractEmailWebhookRoute = ApiExtractEmailWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
   '/items': typeof ItemsRoute
+  '/order': typeof OrderRoute
   '/upload': typeof UploadRoute
   '/api/additional-options': typeof ApiAdditionalOptionsRoute
   '/api/catalog': typeof ApiCatalogRoute
@@ -262,8 +276,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
   '/items': typeof ItemsRoute
+  '/order': typeof OrderRoute
   '/upload': typeof UploadRoute
   '/api/additional-options': typeof ApiAdditionalOptionsRoute
   '/api/catalog': typeof ApiCatalogRoute
@@ -300,8 +316,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
   '/items': typeof ItemsRoute
+  '/order': typeof OrderRoute
   '/upload': typeof UploadRoute
   '/api/additional-options': typeof ApiAdditionalOptionsRoute
   '/api/catalog': typeof ApiCatalogRoute
@@ -339,8 +357,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dashboard'
     | '/inbox'
     | '/items'
+    | '/order'
     | '/upload'
     | '/api/additional-options'
     | '/api/catalog'
@@ -376,8 +396,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dashboard'
     | '/inbox'
     | '/items'
+    | '/order'
     | '/upload'
     | '/api/additional-options'
     | '/api/catalog'
@@ -413,8 +435,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/dashboard'
     | '/inbox'
     | '/items'
+    | '/order'
     | '/upload'
     | '/api/additional-options'
     | '/api/catalog'
@@ -451,8 +475,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
   InboxRoute: typeof InboxRoute
   ItemsRoute: typeof ItemsRoute
+  OrderRoute: typeof OrderRoute
   UploadRoute: typeof UploadRoute
   ApiAdditionalOptionsRoute: typeof ApiAdditionalOptionsRoute
   ApiCatalogRoute: typeof ApiCatalogRoute
@@ -496,6 +522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inbox': {
       id: '/inbox'
       path: '/inbox'
@@ -508,6 +541,13 @@ declare module '@tanstack/react-router' {
       path: '/items'
       fullPath: '/items'
       preLoaderRoute: typeof ItemsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order': {
+      id: '/order'
+      path: '/order'
+      fullPath: '/order'
+      preLoaderRoute: typeof OrderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/upload': {
@@ -739,8 +779,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
   InboxRoute: InboxRoute,
   ItemsRoute: ItemsRoute,
+  OrderRoute: OrderRoute,
   UploadRoute: UploadRoute,
   ApiAdditionalOptionsRoute: ApiAdditionalOptionsRoute,
   ApiCatalogRoute: ApiCatalogRoute,

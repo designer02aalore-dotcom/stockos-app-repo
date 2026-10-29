@@ -192,8 +192,23 @@ function findSpellingSuggestions(
     const itSubject = getSubjectFromTitle(item.name);
     if (qSubject && itSubject && qSubject !== itSubject) continue;
 
-    // 3. Exact token re-ordering match (e.g. "6 worksheet" <=> "Worksheets 6")
+    // 2b. Base Title Match / Substring Match (e.g. query is "New Star Sci 6" and catalog has "Sci 6", or vice versa)
     const itTokens = normalizeTokens(item.name);
+    const allItInQ = itTokens.length > 0 && itTokens.every((t) => qTokens.includes(t));
+    const allQInIt = qTokens.length > 0 && qTokens.every((t) => itTokens.includes(t));
+    if ((allItInQ || allQInIt) && (!qDigits || qDigits === itDigits) && (!qSubject || qSubject === itSubject)) {
+      scored.push({ item, score: 94, distance: 0 });
+      continue;
+    }
+
+    const qBaseTitle = normalizeSeriesBase(query);
+    const itBaseTitle = normalizeSeriesBase(item.name);
+    if (qBaseTitle && itBaseTitle && qBaseTitle === itBaseTitle && (!qDigits || qDigits === itDigits)) {
+      scored.push({ item, score: 94, distance: 0 });
+      continue;
+    }
+
+    // 3. Exact token re-ordering match (e.g. "6 worksheet" <=> "Worksheets 6")
     const itTokensSorted = [...itTokens].sort().join(" ");
     if (qTokensSorted === itTokensSorted && qTokens.length > 0) {
       scored.push({ item, score: 98, distance: 0 });
@@ -637,9 +652,21 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
     });
   };
 
+  const isUnlinkedLineItem = (it: DraftLineItem) => {
+    if (!it.matchedItemId || !it.matched) return true;
+    const isExact = catalogItems.some(
+      (c) => c.name && normalizeName(c.name) === normalizeName(it.description || "")
+    );
+    if (isExact) return false;
+    if (it.matchedItemName && normalizeName(it.matchedItemName) === normalizeName(it.description || "")) {
+      return false;
+    }
+    return true;
+  };
+
   const handlePromptAllUnlinked = () => {
     const unlinked = draft.lineItems.filter(
-      (it) => !it.matchedItemId && (it.description?.trim() || it.sku?.trim())
+      (it) => isUnlinkedLineItem(it) && (it.description?.trim() || it.sku?.trim())
     );
     if (unlinked.length === 0) return;
 
@@ -674,9 +701,9 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
       return;
     }
 
-    // Check if there are any unlinked line items (items without matchedItemId)
+    // Check if there are any unlinked line items (items without matchedItemId or mismatching catalog)
     const unlinked = draft.lineItems.filter(
-      (it) => !it.matchedItemId && (it.description?.trim() || it.sku?.trim())
+      (it) => isUnlinkedLineItem(it) && (it.description?.trim() || it.sku?.trim())
     );
 
     if (unlinked.length > 0) {
@@ -802,11 +829,13 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
       if (match) {
         return {
           ...line,
+          description: match.name,
           matchedItemId: match.id,
           matchedItemCode: match.code || undefined,
           matchedItemName: match.name,
           unit_price: line.unit_price || match.price || 0,
           confidence: 100,
+          matched: true,
         };
       }
       return line;
@@ -975,14 +1004,13 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
             updated.unit_price = updated.unit_price || exactMatch.price || 0;
             updated.confidence = 100;
             updated.matched = true;
-          } else if (
-            it.matchedItemId &&
-            it.matchedItemName &&
-            normalizeName(it.matchedItemName) !== normalizeName(trimmedVal)
-          ) {
-            // Text no longer matches the linked catalog product: mark unverified so suggestions appear
+          } else {
+            // Text does not match any catalog product: mark as unlinked new item
             updated.confidence = 0;
             updated.matched = false;
+            updated.matchedItemId = null;
+            updated.matchedItemName = null;
+            updated.matchedItemCode = null;
           }
         }
 
@@ -1221,15 +1249,45 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
           {/* Left Block: Back Arrow, PO Badge, Status, Confidence */}
           <div className="flex flex-wrap items-center gap-2.5">
             <Link
-              to={draft.sourceType === "email" ? "/inbox" : "/orders"}
-              title="Return to list"
-              className={
-                buttonVariants({ variant: "ghost", size: "icon-sm" }) +
-                " text-muted-foreground hover:text-foreground border border-slate-300 dark:border-slate-700 rounded-lg size-8 shrink-0"
-              }
+              to="/orders"
+              title="Return to Sales Orders"
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition-all cursor-pointer group shrink-0 active:scale-95"
             >
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-3.5 text-slate-500 group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-slate-100 transition-transform group-hover:-translate-x-0.5" />
+              <span>Back to Orders</span>
             </Link>
+
+            {/* Direct Breadcrumbs: Dashboard / Orders / Inbox */}
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+              <Link
+                to="/"
+                className="hover:text-foreground hover:underline transition-colors text-slate-600 dark:text-slate-400"
+                title="Go to Dashboard"
+              >
+                Dashboard
+              </Link>
+              <span className="text-slate-300 dark:text-slate-600 select-none">/</span>
+              <Link
+                to="/orders"
+                className="hover:text-foreground hover:underline transition-colors text-slate-600 dark:text-slate-400"
+                title="Go to Orders"
+              >
+                Orders
+              </Link>
+              {draft.sourceType === "email" && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-600 select-none">/</span>
+                  <Link
+                    to="/inbox"
+                    className="hover:text-foreground hover:underline transition-colors text-slate-600 dark:text-slate-400"
+                    title="Go to Inbox"
+                  >
+                    Inbox
+                  </Link>
+                </>
+              )}
+              <span className="text-slate-300 dark:text-slate-600 select-none">/</span>
+            </div>
 
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
 
@@ -1780,13 +1838,13 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
                 )}
 
                 {/* Warning banner for unlinked items */}
-                {draft.lineItems.some((it) => !it.matchedItemId && (it.description?.trim() || it.sku?.trim())) && (
+                {draft.lineItems.some((it) => isUnlinkedLineItem(it) && (it.description?.trim() || it.sku?.trim())) && (
                   <div className="mx-4 mt-3.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
                       <AlertCircle className="size-4 text-amber-600 shrink-0" />
                       <span>
                         <strong>
-                          {draft.lineItems.filter((it) => !it.matchedItemId && (it.description?.trim() || it.sku?.trim())).length}{" "}
+                          {draft.lineItems.filter((it) => isUnlinkedLineItem(it) && (it.description?.trim() || it.sku?.trim())).length}{" "}
                           item(s) not in catalog table.
                         </strong>{" "}
                         Click to insert or adjust.
@@ -1892,7 +1950,9 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
 
                                   const isAlreadyMatchedToCatalog = Boolean(
                                     (item.matchedItemId || (item.sku && item.sku !== "NO SKU" && item.matched)) &&
-                                    (item.confidence == null || item.confidence >= 60)
+                                    item.matched &&
+                                    (item.confidence == null || item.confidence >= 60) &&
+                                    (!item.matchedItemName || isExactCatalogMatch || normalizeName(item.matchedItemName) === normalizeName(currentTitle))
                                   );
 
                                   const spellingSuggestions =
@@ -1900,9 +1960,35 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
                                       ? findSpellingSuggestions(currentTitle, catalogItems, otherLinesMatchedIds)
                                       : [];
 
+                                  const combinedSuggestions = [
+                                    ...alternativeMatches.map((alt) => {
+                                      const catalogEntry = catalogItems.find((c) => c.id === alt.id);
+                                      return {
+                                        item: {
+                                          id: alt.id,
+                                          name: alt.name,
+                                          code: alt.code ?? catalogEntry?.code,
+                                          price: alt.price ?? catalogEntry?.price,
+                                          unit: alt.unit ?? catalogEntry?.unit,
+                                        },
+                                        score: alt.confidence,
+                                      };
+                                    }),
+                                    ...spellingSuggestions,
+                                  ];
+
+                                  const seenSugIds = new Set<string>();
+                                  const allCatalogSuggestions = combinedSuggestions.filter((s) => {
+                                    if (seenSugIds.has(s.item.id)) return false;
+                                    seenSugIds.add(s.item.id);
+                                    return true;
+                                  });
+
                                   const hasSelectedCatalogItem = Boolean(
                                     (item.matchedItemId || (item.sku && item.sku !== "NO SKU" && item.matched)) &&
-                                    (item.confidence == null || item.confidence >= 50)
+                                    item.matched &&
+                                    (item.confidence == null || item.confidence >= 50) &&
+                                    (!item.matchedItemName || isExactCatalogMatch || normalizeName(item.matchedItemName) === normalizeName(currentTitle))
                                   );
 
                                   return (
@@ -1918,15 +2004,18 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
                                         placeholder="Enter item description..."
                                       />
 
-                                      {/* Intelligent Spelling Suggestion Pill: "Not this... in your catalog you have: [Item Name]" */}
-                                      {spellingSuggestions.length > 0 && (
-                                        <div className="flex items-center gap-1.5 p-1.5 px-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 rounded-md text-xs text-amber-900 dark:text-amber-200 shadow-2xs animate-in fade-in duration-150">
-                                          <Sparkles className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                                      {/* Intelligent Catalogue Match Suggestion: "This item does not match with the catalogue item. Do you want [Item Name]?" */}
+                                      {allCatalogSuggestions.length > 0 && !isExactCatalogMatch && !hasSelectedCatalogItem && (
+                                        <div className="flex items-center gap-1.5 p-1.5 px-2 bg-amber-50/95 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/80 rounded-md text-xs text-amber-900 dark:text-amber-200 shadow-2xs animate-in fade-in duration-150">
+                                          <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                                           <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
                                             <span className="text-[11px] font-medium text-amber-900 dark:text-amber-200 shrink-0">
-                                              Not in catalog. In your catalog:
+                                              This item does not match with the catalogue item.
+                                              {allCatalogSuggestions.length === 1
+                                                ? ` Do you want “${allCatalogSuggestions[0].item.name}”?`
+                                                : " Do you want:"}
                                             </span>
-                                            {spellingSuggestions.map(({ item: sugItem, score }) => (
+                                            {allCatalogSuggestions.slice(0, 2).map(({ item: sugItem, score }) => (
                                               <button
                                                 key={sugItem.id}
                                                 type="button"
@@ -1936,13 +2025,22 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
                                                   handleApplySuggestion(item.tempId, sugItem);
                                                 }}
                                                 className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white px-2 py-0.5 rounded shadow-2xs transition cursor-pointer"
-                                                title={`Click to replace "${item.description}" with "${sugItem.name}" (${score}% match)`}
+                                                title={`Click to link and use "${sugItem.name}" (${score}% match)`}
                                               >
                                                 <Check className="size-3" />
                                                 Use &ldquo;{sugItem.name}&rdquo;
                                               </button>
                                             ))}
                                           </div>
+                                        </div>
+                                      )}
+
+                                      {allCatalogSuggestions.length === 0 && !isExactCatalogMatch && !hasSelectedCatalogItem && currentTitle.trim().length >= 2 && (
+                                        <div className="flex items-center gap-1.5 p-1.5 px-2 bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-md text-xs text-amber-900 dark:text-amber-200 shadow-2xs animate-in fade-in duration-150">
+                                          <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                                          <span className="text-[11px] font-medium text-amber-900 dark:text-amber-200 shrink-0">
+                                            This item does not match with the catalogue item.
+                                          </span>
                                         </div>
                                       )}
 
@@ -2019,7 +2117,7 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
                                           </Badge>
                                         )}
 
-                                        {Boolean(item.matchedItemId && item.matched && item.matchedItemName && item.matchedItemName !== item.description && (item.confidence == null || item.confidence >= 50)) && (
+                                        {Boolean(hasSelectedCatalogItem && item.matchedItemId && item.matched && item.matchedItemName && item.matchedItemName !== item.description && (item.confidence == null || item.confidence >= 50)) && (
                                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate" title={item.matchedItemName}>
                                             <span>Catalog Match: <strong>{item.matchedItemName}</strong></span>
                                             <button
@@ -2442,7 +2540,7 @@ export function DraftOrderForm({ initialDraft }: { initialDraft: DraftOrder }) {
 
                               {/* Stock Status Badge */}
                               <TableCell className="w-28 py-2.5 align-middle text-center">
-                                {item.matchedItemId ? (
+                                {!isUnlinkedLineItem(item) && item.matchedItemId && item.matched ? (
                                   <Badge
                                     variant="outline"
                                     className="text-[10px] h-5 px-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 font-medium inline-flex items-center gap-1"

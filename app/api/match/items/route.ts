@@ -606,6 +606,10 @@ export async function matchItemInDatabase(
           const byIdSub = getSubject(byIdTokens);
           const subjectMismatch = Boolean(inputSub && byIdSub && inputSub !== byIdSub);
 
+          const inputPub = extractPublisherAndBase(input).publisher.toLowerCase().trim();
+          const byIdPub = extractPublisherAndBase(byId.name).publisher.toLowerCase().trim();
+          const publisherMismatch = Boolean((inputPub || byIdPub) && inputPub !== byIdPub);
+
           const inWords = new Set(normInput.split(/\s+/).filter((w) => w.length > 1));
           const byWords = new Set(normById.split(/\s+/).filter((w) => w.length > 1));
           let sharedWords = 0;
@@ -613,10 +617,10 @@ export async function matchItemInDatabase(
             if (byWords.has(w)) sharedWords++;
           }
 
-          if (digitsMismatch || subjectMismatch || (sharedWords === 0 && inWords.size > 0)) {
+          if (digitsMismatch || subjectMismatch || publisherMismatch || (sharedWords === 0 && inWords.size > 0)) {
             isCompatible = false;
             console.warn(
-              `[matchItemInDatabase] Stale/incompatible itemId ${itemId} ("${byId.name}") rejected for input "${input}"`
+              `[matchItemInDatabase] Stale/incompatible itemId ${itemId} ("${byId.name}") rejected for input "${input}" (publisher mismatch: ${publisherMismatch})`
             );
           }
         }
@@ -760,10 +764,10 @@ export async function matchItemInDatabase(
     const baseTitleMatches = namedItems.filter((item) => {
       const itExtracted = extractPublisherAndBase(item.name!);
       const itPub = itExtracted.publisher.toLowerCase().trim();
-      // If both the input and the catalog item explicitly have different publisher brands (e.g. "Olive" vs "Pikaso"),
-      // do NOT force primary match! The order item stays "Olive mix Rhymes A" as written on chit,
-      // and "Pikaso Mix Rhymes A" is provided in Related Items (partialMatches) for the user to select.
-      if (qPub && itPub && qPub !== itPub) {
+      // If either the input or the catalog item has a publisher brand and they don't match,
+      // do NOT force primary match! The order item stays as written,
+      // and the catalog item is provided in Related Items (partialMatches) for the user to select.
+      if ((qPub || itPub) && qPub !== itPub) {
         return false;
       }
       const itBaseCanon = normalizeTitleStems(

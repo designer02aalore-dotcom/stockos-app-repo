@@ -41,12 +41,10 @@ function UploadPage() {
             <Link
               to="/orders"
               title="Back to Orders"
-              className={
-                buttonVariants({ variant: "ghost", size: "icon-sm" }) +
-                " text-muted-foreground hover:text-foreground border border-slate-300 dark:border-slate-700 rounded-lg size-8 shrink-0"
-              }
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition-all cursor-pointer group shrink-0 active:scale-95"
             >
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-3.5 text-slate-500 group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-slate-100 transition-transform group-hover:-translate-x-0.5" />
+              <span>Back</span>
             </Link>
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
             <div>
